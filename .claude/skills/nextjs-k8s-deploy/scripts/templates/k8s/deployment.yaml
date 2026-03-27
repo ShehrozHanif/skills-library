@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: learnflow-frontend
+  namespace: learnflow
+  labels:
+    app: learnflow-frontend
+    part-of: learnflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: learnflow-frontend
+  template:
+    metadata:
+      labels:
+        app: learnflow-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: learnflow-frontend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
+          env:
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            - name: TRIAGE_INTERNAL_URL
+              value: "http://triage-agent.learnflow.svc.cluster.local/chat"
+            - name: NEXT_PUBLIC_TRIAGE_URL
+              value: "/api/chat"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: database-url
+            - name: AUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: auth-secret
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+            - name: KAFKA_BROKERS
+              value: "kafka-0.kafka.kafka.svc.cluster.local:9092"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: learnflow-frontend
+  namespace: learnflow
+spec:
+  selector:
+    app: learnflow-frontend
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP

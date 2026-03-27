@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${AGENT_NAME}-agent
+  namespace: learnflow
+  labels:
+    app: ${AGENT_NAME}-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${AGENT_NAME}-agent
+  template:
+    metadata:
+      labels:
+        app: ${AGENT_NAME}-agent
+        component: agent
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "${AGENT_NAME}-agent"
+        dapr.io/app-port: "8000"
+        dapr.io/log-level: "warn"
+        dapr.io/sidecar-memory-request: "32Mi"
+        dapr.io/sidecar-memory-limit: "64Mi"
+        dapr.io/sidecar-cpu-request: "50m"
+        dapr.io/sidecar-cpu-limit: "100m"
+    spec:
+      containers:
+        - name: agent
+          image: learnflow-agent:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "${AGENT_NAME}"
+            - name: SUBSCRIBE_TOPIC
+              value: "${SUBSCRIBE_TOPIC}"
+            - name: OPENAI_API_KEY
+              value: "${OPENAI_API_KEY}"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${AGENT_NAME}-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: ${AGENT_NAME}-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP

@@ -1,0 +1,403 @@
+## LearnFlow Backend — 6 AI Agent Deployments (single image, configured via env vars)
+## Agents: triage, concepts, codereview, debug, exercise, progress
+
+---
+# Triage Agent — routes messages to specialized agents
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triage-agent
+  namespace: learnflow
+  labels:
+    app: triage-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triage-agent
+  template:
+    metadata:
+      labels:
+        app: triage-agent
+        component: agent
+    spec:
+      containers:
+        - name: agent
+          image: us-central1-docker.pkg.dev/todo-platform-489221/learnflow-repo/learnflow-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "triage"
+            - name: SUBSCRIBE_TOPIC
+              value: "learning"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: triage-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: triage-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# Concepts Agent — explains Python concepts
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: concepts-agent
+  namespace: learnflow
+  labels:
+    app: concepts-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: concepts-agent
+  template:
+    metadata:
+      labels:
+        app: concepts-agent
+        component: agent
+    spec:
+      containers:
+        - name: agent
+          image: us-central1-docker.pkg.dev/todo-platform-489221/learnflow-repo/learnflow-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "concepts"
+            - name: SUBSCRIBE_TOPIC
+              value: "learning"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: concepts-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: concepts-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# Code Review Agent
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codereview-agent
+  namespace: learnflow
+  labels:
+    app: codereview-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codereview-agent
+  template:
+    metadata:
+      labels:
+        app: codereview-agent
+        component: agent
+    spec:
+      containers:
+        - name: agent
+          image: us-central1-docker.pkg.dev/todo-platform-489221/learnflow-repo/learnflow-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "codereview"
+            - name: SUBSCRIBE_TOPIC
+              value: "code"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codereview-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: codereview-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# Debug Agent
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: debug-agent
+  namespace: learnflow
+  labels:
+    app: debug-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: debug-agent
+  template:
+    metadata:
+      labels:
+        app: debug-agent
+        component: agent
+    spec:
+      containers:
+        - name: agent
+          image: us-central1-docker.pkg.dev/todo-platform-489221/learnflow-repo/learnflow-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "debug"
+            - name: SUBSCRIBE_TOPIC
+              value: "code"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: debug-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: debug-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# Exercise Agent
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exercise-agent
+  namespace: learnflow
+  labels:
+    app: exercise-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: exercise-agent
+  template:
+    metadata:
+      labels:
+        app: exercise-agent
+        component: agent
+    spec:
+      containers:
+        - name: agent
+          image: us-central1-docker.pkg.dev/todo-platform-489221/learnflow-repo/learnflow-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "exercise"
+            - name: SUBSCRIBE_TOPIC
+              value: "exercise"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exercise-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: exercise-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
+
+---
+# Progress Agent
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: progress-agent
+  namespace: learnflow
+  labels:
+    app: progress-agent
+    part-of: learnflow
+    component: agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: progress-agent
+  template:
+    metadata:
+      labels:
+        app: progress-agent
+        component: agent
+    spec:
+      containers:
+        - name: agent
+          image: us-central1-docker.pkg.dev/todo-platform-489221/learnflow-repo/learnflow-agent:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          env:
+            - name: AGENT_NAME
+              value: "progress"
+            - name: SUBSCRIBE_TOPIC
+              value: "struggle"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: learnflow-secrets
+                  key: openai-api-key
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: progress-agent
+  namespace: learnflow
+spec:
+  selector:
+    app: progress-agent
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP
